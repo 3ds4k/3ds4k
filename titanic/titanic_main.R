@@ -1,16 +1,31 @@
+# Titanic
+
 # PACKAGES ----------------------------------------------------------------
+library(tidyverse)
 library(data.table)
-library(dplyr)
 
 
-# PATH --------------------------------------------------------------------
+# FUNCTIONS ---------------------------------------------------------------
+
+source('titanic_functions_data.R')
+
+
+# SETTINGS ----------------------------------------------------------------
+
 dataPath <- "data/"
-
+trainFile <- paste0(dataPath, 'train.csv')
 
 # DATA CLEANING -----------------------------------------------------------
-trainData <- fread(paste0(dataPath, 'train.csv'), sep = ",")
-newNames <- c("passangerId", "survived", "class", "name", "sex", "age", "nSameAgeRelatives",
-              "nDiffAgeRelatives", "ticket", "fare", "cabin", "harbour")
-setnames(trainData, names(trainData), newNames)
 
+# Read data
+trainData <- ReadTrainData(trainFile)
 
+# Separate age in age and ageEstimated
+trainData[, ageEstimated := (age > 1 & (age-floor(age) == 0.5))]
+trainData[age > 1, age := floor(age)]
+
+# Honorific
+trainData[, honorific := sapply(name, SeparateHonorific)]
+
+# Married
+trainData[, married := map2_lgl(name, sex, AssignMarried)]
