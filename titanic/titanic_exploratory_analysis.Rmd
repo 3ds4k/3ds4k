@@ -1,0 +1,25 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+source("titanic_main.R")
+library(knitr)
+```
+
+# Survivors by sex
+
+```{r}
+sexSummaryTable <- trainData[, .(n=.N), by=c("sex", "survived")]
+sexSummaryTable[, ":=" (p = round(n / sum(n) * 100, 2)), by = "sex"][order(sex, survived)]
+```
+
+# Survivors by civil status
+
+```{r, echo=FALSE}
+sexSummaryTable <- trainData[sex == 'female', .(n=.N), by=c("married", "survived")]
+sexSummaryTable[, ":=" (p = round(n / sum(n) * 100, 2)), by = "married"][order(married, survived)]
+```
+
+
