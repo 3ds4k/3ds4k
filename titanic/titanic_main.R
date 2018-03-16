@@ -3,6 +3,7 @@
 # PACKAGES ----------------------------------------------------------------
 library(tidyverse)
 library(data.table)
+library(caret)
 
 
 # FUNCTIONS ---------------------------------------------------------------
@@ -31,4 +32,65 @@ trainData[, honorific := sapply(name, SeparateHonorific)]
 trainData[, married := map2_lgl(name, sex, AssignMarried)]
 
 
+# Vulnerable
+trainData[, vulnerable := ifelse(sex == "female" | age < 16, T, F)]
+
+
+
+# MODEL -------------------------------------------------------------------
+
+targetVariable <- 'survived'
+featuredVariables <- c('class',
+                       'sex',
+                       'age',
+                       'fare')
+
+totalSize <- nrow(trainData)
+trainingRate <- 0.7
+
+set.seed(805)
+trainIndices <- sample(totalSize, round(totalSize * trainingRate))
+
+training <- trainData[ trainIndices,]
+testing <- trainData[-trainIndices,]
+
+formula <- as.formula(paste0(targetVariable, " ~ ", paste(featuredVariables, collapse=' + ')))
+
+model <- glm(formula, family=binomial(link='logit'), data=training)
+
+testing[, prediction := (predict(model, testing, type="response") > 0.5 )]
+testing <- testing[!is.na(prediction)]
+
+totalTest <- nrow(testing)
+accuracy <- sum(testing[, survived] == testing[, prediction])/totalTest
+
+# RF
+formula <- as.formula(paste0("factor(", targetVariable, ") ~ ", paste(featuredVariables, collapse=' + ')))
+trainingRf <- training[, c(targetVariable, featuredVariables), with = F]
+trainingRf <- na.omit(trainingRf)
+
+model <- randomForest(formula, data=trainingRf)
+
+testing[, prediction := predict(model, testing, type="response")]
+testing <- testing[!is.na(prediction)]
+
+totalTest <- nrow(testing)
+accuracy <- sum(testing[, survived] == testing[, prediction])/totalTest
+
+# XGBoost
+formula <- as.formula(paste0("factor(", targetVariable, ") ~ ", paste(featuredVariables, collapse=' + ')))
+training <- training[, c(targetVariable, featuredVariables), with = F]
+training <- na.omit(trainingRf)
+
+model <- train(formula, data = training, method = "xgbTree", metric = "Accuracy")
+
+testing[, prediction := predict(model, testing)]
+testing <- testing[!is.na(prediction)]
+
+totalTest <- nrow(testing)
+accuracy <- sum(testing[, survived] == testing[, prediction])/totalTest
+
+
+
+# model <- train(formula, data = training, method = "logitBoost")
 
