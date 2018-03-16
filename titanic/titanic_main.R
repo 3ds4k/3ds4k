@@ -27,16 +27,8 @@ trainData[age > 1, age := floor(age)]
 # Honorific
 trainData[, honorific := sapply(name, SeparateHonorific)]
 
-# Fare distribution
-ggplot(trainData,aes(x=fare)) + 
-    geom_histogram(data=subset(trainData, survived == TRUE),fill = "red", alpha = 0.2) +
-    geom_histogram(data=subset(trainData, survived == FALSE),fill = "blue", alpha = 0.2)
-
-trainData[, lowFare := F]
-fareDistribution <- trainData[fare < 50, lowFare := T][, .(n = .N), by = c("survived", "lowFare")]
-fareDistribution <- fareDistribution[, ":=" (p = round(n / sum(n) * 100, 2)), by = "lowFare"][order(lowFare, survived)]
-fareDistribution <- dcast(fareDistribution, survived ~ lowFare, value.var = "p")
-
-
 # Married
 trainData[, married := map2_lgl(name, sex, AssignMarried)]
+
+
+

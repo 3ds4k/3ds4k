@@ -23,3 +23,61 @@ sexSummaryTable[, ":=" (p = round(n / sum(n) * 100, 2)), by = "married"][order(m
 ```
 
 
+# Survivors by Fare 
+```{r, echo=FALSE}
+ggplot(trainData,aes(x=fare)) + 
+    geom_histogram(data=subset(trainData, survived == TRUE),fill = "red", alpha = 0.2) +
+    geom_histogram(data=subset(trainData, survived == FALSE),fill = "blue", alpha = 0.2)
+```
+
+```{r, echo=FALSE}
+trainData[, lowFare := F]
+fareDistribution <- trainData[fare < 50, lowFare := T][, .(n = .N), by = c("survived", "lowFare")]
+fareDistribution <- fareDistribution[, ":=" (p = round(n / sum(n) * 100, 2)), by = "lowFare"][order(lowFare, survived)]
+fareDistribution <- dcast(fareDistribution, survived ~ lowFare, value.var = "p")
+setnames(fareDistribution, c("FALSE", "TRUE"), c("highFare", "lowFare"))
+fareDistribution
+```
+
+# Survivors by Class
+```{r, echo=FALSE}
+classSummaryTable <- trainData[, .(n=.N), by=c("class", "survived")]
+classSummaryTable[, ":=" (p = round(n / sum(n) * 100, 2)), by = "class"][order(class, survived)]
+```
+
+```{r, echo=FALSE}
+classSummaryTable <- trainData[, .(n=.N), by = c("class", "sex", "survived")]
+classSummaryTable[, ":=" (p = round(n / sum(n) * 100, 2)), by = c("class", "sex")][order(class, survived)]
+```
+
+# Survivors by age
+
+```{r, echo=FALSE}
+ggplot(trainData,aes(x=age)) + 
+    geom_histogram(data=subset(trainData, survived == TRUE),fill = "red", alpha = 0.2) +
+    geom_histogram(data=subset(trainData, survived == FALSE),fill = "blue", alpha = 0.2)
+```
+
+
+```{r, echo=FALSE}
+ageTable <- trainData[, roundAge := round(age/10)]
+ageTable[age < 14, ageRange := as.factor("1-child")]
+ageTable[14 <= age & age < 27, ageRange := as.factor("2-young")]
+ageTable[27 <= age & age < 56, ageRange := as.factor("3-adult")]
+ageTable[56 <= age , ageRange := as.factor("4-old")]
+```
+
+```{r, echo=FALSE}
+ageSummaryTable <- ageTable[, .(n=.N), by = c("roundAge", "survived")]
+ageSummaryTable[, ":=" (p = round(n / sum(n) * 100, 2)), by = "roundAge"][order(roundAge, survived)]
+```
+
+```{r, echo=FALSE}
+ageRangeSummaryTable <- ageTable[, .(n=.N), by = c("ageRange", "sex", "survived")]
+ageRangeSummaryTable[, ":=" (p = round(n / sum(n) * 100, 2)), by = c("ageRange", "sex")][order(ageRange, sex, survived)]
+```
+
+
+
+
+
